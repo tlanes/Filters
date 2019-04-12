@@ -13,14 +13,16 @@ function [outputs] = ekf(options,obs)
 %               .IC_wPhi (initial conditions with flat identity matrix)
 %               .Pmat (state error covariance matrix)
 %               .obs_fcn (observation/measurement function handle)
-%               .integ_fcn (dynamics function handle for integration)
+%               .H_fcn (measurement jacobian function handle)
+%               .integ_fcn (dynamics and STM integration function handle)
 %               .xtrue (truth data)
+%               .stationECI (station position vector in ECI array)
 %
 %           obs [struct]
 %               .time (time span vector)
 %               .meas (observation/measurement data)
 %               .num_meas (number of measurements at each step)
-%
+%               .station_id (station ID at each step array)
 %
 
 
@@ -50,7 +52,7 @@ Pi(:,:,1)   = options.Pmat;
 
 %condition on first observation @t=0
 ri_pre(:,1) = y(:,1) - options.obs_fcn(xi(1:6,1), stationECI(1:6,1));
-Hblk        = options.H_fcn_sc(xi(1:6,1), stationECI(1:6,1));
+Hblk        = options.H_fcn(xi(1:6,1), stationECI(1:6,1));
 Ki          = Pi(:,:,1)*Hblk'*((Hblk*Pi(:,:,1)*Hblk' + R)\eye(2));
 
 xi(1:n,1) = xi(1:n,1) + Ki*(ri_pre(:,1));
@@ -79,7 +81,7 @@ for i = 2:length(y)
     %Compute Obs
     sim_meas = options.obs_fcn(xi(1:6,i), stationECI(1:6,i));
     ri_pre(:,i)   = y(:,i) - sim_meas;
-    Hblk       = options.H_fcn_sc(xi(1:6,i), stationECI(1:6,i));
+    Hblk       = options.H_fcn(xi(1:6,i), stationECI(1:6,i));
     Ki          = Pi(:,:,i)*Hblk'*((Hblk*Pi(:,:,i)*Hblk' + R)\eye(2));
    
     %Measurement Update
